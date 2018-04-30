@@ -1,6 +1,6 @@
-# SpanishSocialMediaIndex
-Final degree project
-The repository consist in three files
+### SpanishSocialMediaIndex
+
+This is the repository of my final degree project. It consists in three files
 
  1- Scripts to get spanish twitter users
  
