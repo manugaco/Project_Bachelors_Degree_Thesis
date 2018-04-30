@@ -78,7 +78,7 @@ fun_uff_clean <- function(x){
 
 Usersx_clean <- base:::as.data.frame(sapply(Viplistx, fun_uff_clean))
 
-Userlistfuuuuuckyeah <- Usersx_clean %>%
+Userlistfinal <- Usersx_clean %>%
   map(extract) %>%
   map_df(bind_rows)
 
