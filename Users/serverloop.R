@@ -16,10 +16,10 @@ mainUDF <- UsersDF_clean4
 
 #API key
 
-setup_twitter_oauth(consumer_key = "u2UthjbK6YHyQSp4sPk6yjsuV",
-                    consumer_secret = "sC4mjd2WME5nH1FoWeSTuSy7JCP5DHjNtTYU1X6BwQ1vPZ0j3v", 
-                    access_token = "1365606414-7vPfPxStYNq6kWEATQlT8HZBd4G83BBcX4VoS9T",
-                    access_secret = "0hJq9KYC3eBRuZzJqSacmtJ4PNJ7tNLkGrQrVl00JHirs")
+setup_twitter_oauth(consumer_key = "...",
+                    consumer_secret = "...", 
+                    access_token = "...",
+                    access_secret = "...")
 
 print("objects loaded")
 
