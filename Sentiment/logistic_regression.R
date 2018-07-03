@@ -10,7 +10,7 @@ library(ggrepel)
 
 conv_fun <- function(x) iconv(x, "latin1", "ASCII", "")
 
-# data splitting on train and test
+# data splitting in train and test
 set.seed(123)
 
 load("Objects/TASS/TASScorpus_clean.RData")
@@ -113,7 +113,7 @@ resultstable
 accuracy <- ((resultstable[1,1] + resultstable[2,2])/7708)
 print(accuracy)
 
-#Accuracy - 85.88%
+#Accuracy - 85.83%
 
 save(glmnet_classifier,file = "Objects/Models/glmnet_classifier.RData")
 save(vectorizer,file = "Objects/Models/vectorizer.RData")
