@@ -1,8 +1,8 @@
 
 
-#Clean text funtion: clean with regular expressions, language filtering and stemming
+#Clean text function: clean with regular expressions, language filtering and stemming
 
-vector <- as.vector(sample(DF_2017_12_7$text, 10000)) #Input has to be a vector and ourput will be a dataframe
+vector <- as.vector(sample(DF_2017_12_7$text, 10000)) #Input has to be a vector and output will be a dataframe
 
 fun_txtcleaner <- function(x){
   
