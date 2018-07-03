@@ -45,43 +45,36 @@ trControl <- trainControl(method = "cv", number = 10, verbose = TRUE)
 
 cv_nb <- train(matrixcv, vectorcv, trControl=trControl, method = "nb")
 
-cv_nb$modelInfo #Accuracy 51.41%
+cv_nb$modelInfo #Accuracy 56,25%
 
-#Support Vector Machines and Maximum Entropy (e1017)
+#Support Vector Machines
 
 set.seed(123)
 
 cv_svm <- cross_validate(container, 10, algorithm ="SVM", verbose = TRUE)
 
-cv_svm #Accuracy 83%
-
-set.seed(123)
-
-cv_maxent <- cross_validate(container, 10, algorithm ="MAXENT", verbose = TRUE)
-
-cv_maxent #Accuracy 95.8% (overfitted)
+cv_svm #Accuracy 82,22%
 
 #Making the models to test the accuracy in split mode
 
-models = train_models(container, algorithms=c("SVM", "MAXENT"), verbose = TRUE)
+models = train_models(container, algorithms=c("SVM"), verbose = TRUE)
 
 results = classify_models(container, models)
 
 #Accuracy table
 
 table(as.numeric(as.factor(alg_tweets[16001:20000, 2])), results[,"SVM_LABEL"])
-table(as.numeric(as.factor(alg_tweets[16001:20000, 2])), results[,"MAXENTROPY_LABEL"])
+
 
 #Recall accuracy
 
-recall_accuracy(as.numeric(as.factor(alg_tweets[16001:20000, 2])), results[,"SVM_LABEL"]) #82.22%
-recall_accuracy(as.numeric(as.factor(alg_tweets[16001:20000, 2])), results[,"MAXENTROPY_LABEL"]) #79.2%
+recall_accuracy(as.numeric(as.factor(alg_tweets[16001:20000, 2])), results[,"SVM_LABEL"]) #85.12%
 
 save(cv_nb, file = "Objects/Models/CV_NBresults.RData")
 save(cv_svm, file = "Objects/Models/CV_SVMresults.RData")
-save(cv_maxent, file = "Objects/Models/CV_MEresults.RData")
+
 
 save(results, file = "Objects/Models/ResultsRTxtools.RData")
-save(results, file = "Objects/Models/ResultsRTxtools.RData")
+
 
 
