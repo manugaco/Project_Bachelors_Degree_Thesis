@@ -186,14 +186,3 @@ save(TASScorpustest, file = "Objects/Tweets/TASScorpustest.RData")
 save(TASScorpustrain_pos, file = "Objects/Tweets/TASScorpustrain_pos.RData")
 save(TASScorpustrain_neg, file = "Objects/Tweets/TASScorpustrain_neg.RData")
 
-#Subsetting the corpus due the memory limitations
-
-pos <- sample_n((TASScorpustrain_pos), 7500) #1:15000
-neg <- sample_n((TASScorpustrain_neg), 7500) #1:15000 
-test <- sample_n((TASScorpustest), 3750) #1:18750
-
-#train - test (80-20) 18750 classified tweets to test the accuracy of the algorithms
-
-alg_tweets = rbind(pos, neg, test)
-
-
