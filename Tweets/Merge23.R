@@ -1,0 +1,2936 @@
+
+
+library("tidyverse")
+
+#Funtion
+
+fun_txtcleaner <- function(x){
+  t1 <- Sys.time()
+  print("starting function...")
+  
+  #Libraries
+  
+  print("loading libraries...")
+  library("tidyverse")
+  library("splitstackshape")
+  library("textcat")
+  library("cldr")
+  library("RTextTools")
+  library("lubridate")
+  library("tm")
+  print("...libraries loaded")
+  
+  #function input
+  
+  vec <- x
+  
+  #Cleaning the text (regular expresions)
+  
+  print("regex filter...")
+  vec <- vec[!is.na(vec)]
+  vec <- gsub("http://www. ", "http://www.", vec)
+  vec <- gsub("https://www. ", "http://www.", vec)
+  vec <- gsub("http:// ", "http://www.", vec)
+  vec <- gsub("https:// ", "http://www.", vec)
+  vec <- gsub("pic.twitter.com/", "http://www.", vec)
+  vec <- gsub(" …", ".html", vec)
+  vec <- gsub("/s tatus/", "", vec)
+  vec <- gsub(".0", "", vec)
+  vec <- gsub("http[[:alnum:][:punct:]]*", "", vec)
+  vec <- gsub("[[:alnum:][:punct:]]*.html", "", vec)
+  vec <- gsub("rt [[:alnum:][:punct:]]*", "", vec)
+  vec <- gsub("RT [[:alnum:][:punct:]]*", "", vec)
+  vec <- gsub("#[[:alpha:][:alnum:]]*", "", vec)
+  vec <- gsub("@[[:alpha:][:alnum:]]*", "", vec)
+  vec <- gsub("[^[:alpha:][:space:]]*", "", vec)
+  
+  vec <- vec %>%
+    tolower() %>%
+    removePunctuation() %>%
+    removeNumbers() %>%
+    stripWhitespace()
+  
+  vec[vec==" "] <- NA
+  vec[vec==""] <- NA
+  
+  vec <- vec[!is.na(vec)]
+  print("regex filter, done")
+  
+  #Filtering the languages of the column text
+  
+  print("language filter...")
+  df <- as.data.frame(vec)
+  
+  colnames(df) <- c("text")
+  
+  t2 <- Sys.time()
+  print("textcat...")
+  
+  text_cat <- textcat(df$text)
+  df <- cbind(df, text_cat)
+  
+  print(difftime(Sys.time(), t2, units = 'mins'))
+  print("textcat done")
+  
+  cldr <- detectLanguage(df$text)
+  cldr <- (cldr[,c("detectedLanguage")])
+  df <- cbind(df, cldr)
+  df$cldr <- df$cldr %>%
+    tolower()
+  print("language filter, done")
+  
+  #Languages pre-filter
+  #Regional languages
+  
+  df_all <- df[(df$text_cat == "spanish") | (df$cldr == "spanish") |
+                 (df$text_cat == "catalan") | (df$cldr == "catalan") |
+                 (df$text_cat == "galician") | (df$cldr == "galician"), ]
+  
+  df_all <- df_all[!duplicated(df_all$text), ]
+  
+  df_all <- as.data.frame(stemDocument(as.character(df_all$text), language="spanish"))
+  
+  colnames(df_all) <- c("text")
+  
+  clean_REG <<- select(df_all, c("text"))
+  
+  #Spanish only
+  
+  df_ESP <- df[(df$text_cat == "spanish") | (df$cldr == "spanish"), ]
+  
+  #Deleting repeated tweets
+  
+  df_ESP <- df_ESP[!duplicated(df_ESP$text), ]
+  
+  df_ESP <- as.data.frame(stemDocument(as.character(df_ESP$text), language="spanish"))
+  
+  colnames(df_ESP) <- c("text")
+  
+  clean_ESP <<- select(df_ESP, c("text"))
+  print(difftime(Sys.time(), t1, units = 'mins'))
+  print("...function finished")
+}
+
+#Merging the Tweets datasets
+
+#Series 23
+
+#---2017---
+
+#December
+
+print("December2017, cleaning...")
+print(Sys.time())
+
+S1_2017_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/12/S1_2017_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_12_23 <- select(S1_2017_12_23, c("username", "date", "text"))
+
+S2_2017_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/12/S2_2017_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_12_23 <- select(S2_2017_12_23, c("username", "date", "text"))
+
+S3_2017_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/12/S3_2017_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_12_23 <- select(S3_2017_12_23, c("username", "date", "text"))
+
+DF_2017_12_23 <- rbind(S1_2017_12_23, S2_2017_12_23, S3_2017_12_23)
+
+save(DF_2017_12_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_12_23.RData")
+
+vector <- as.vector(DF_2017_12_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_12_23_cleanREG <- clean_REG
+DF_2017_12_23_cleanESP <- clean_ESP
+
+save(DF_2017_12_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_12_23.RData")
+save(DF_2017_12_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_12_23.RData")
+
+rm(S1_2017_12_23, S2_2017_12_23, S3_2017_12_23, DF_2017_12_23, DF_2017_12_23_cleanREG, DF_2017_12_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("December2017, ...done")
+print(Sys.time())
+
+#November
+
+print("November2017, cleaning...")
+print(Sys.time())
+
+S1_2017_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/11/S1_2017_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_11_23 <- select(S1_2017_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/11/S2_2017_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_11_23 <- select(S2_2017_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/11/S3_2017_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_11_23 <- select(S3_2017_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_11_23 <- rbind(S1_2017_11_23, S2_2017_11_23, S3_2017_11_23)
+
+save(DF_2017_11_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_11_23.RData")
+
+vector <- as.vector(DF_2017_11_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_11_23_cleanREG <- clean_REG
+DF_2017_11_23_cleanESP <- clean_ESP
+
+save(DF_2017_11_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_11_23.RData")
+save(DF_2017_11_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_11_23.RData")
+
+rm(S1_2017_11_23, S2_2017_11_23, S3_2017_11_23, DF_2017_11_23, DF_2017_11_23_cleanREG, DF_2017_11_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("November2017, ...done")
+print(Sys.time())
+
+#October
+
+print("October2017, cleaning...")
+print(Sys.time())
+
+S1_2017_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/10/S1_2017_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_10_23 <- select(S1_2017_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/10/S2_2017_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_10_23 <- select(S2_2017_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/10/S3_2017_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_10_23 <- select(S3_2017_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_10_23 <- rbind(S1_2017_10_23, S2_2017_10_23, S3_2017_10_23)
+
+save(DF_2017_10_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_10_23.RData")
+
+vector <- as.vector(DF_2017_10_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_10_23_cleanREG <- clean_REG
+DF_2017_10_23_cleanESP <- clean_ESP
+
+save(DF_2017_10_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_10_23.RData")
+save(DF_2017_10_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_10_23.RData")
+
+rm(S1_2017_10_23, S2_2017_10_23, S3_2017_10_23, DF_2017_10_23, DF_2017_10_23_cleanREG, DF_2017_10_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("October2017, ...done")
+print(Sys.time())
+
+#September
+
+print("September2017, cleaning...")
+print(Sys.time())
+
+S1_2017_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/9/S1_2017_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_9_23 <- select(S1_2017_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/9/S2_2017_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_9_23 <- select(S2_2017_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/9/S3_2017_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_9_23 <- select(S3_2017_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_9_23 <- rbind(S1_2017_9_23, S2_2017_9_23, S3_2017_9_23)
+
+save(DF_2017_9_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_9_23.RData")
+
+vector <- as.vector(DF_2017_9_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_9_23_cleanREG <- clean_REG
+DF_2017_9_23_cleanESP <- clean_ESP
+
+save(DF_2017_9_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_9_23.RData")
+save(DF_2017_9_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_9_23.RData")
+
+rm(S1_2017_9_23, S2_2017_9_23, S3_2017_9_23, DF_2017_9_23, DF_2017_9_23_cleanREG, DF_2017_9_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("September2017, ...done")
+print(Sys.time())
+
+#August
+
+print("August2017, cleaning...")
+print(Sys.time())
+
+S1_2017_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/8/S1_2017_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_8_23 <- select(S1_2017_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/8/S2_2017_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_8_23 <- select(S2_2017_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/8/S3_2017_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_8_23 <- select(S3_2017_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_8_23 <- rbind(S1_2017_8_23, S2_2017_8_23, S3_2017_8_23)
+
+save(DF_2017_8_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_8_23.RData")
+
+vector <- as.vector(DF_2017_8_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_8_23_cleanREG <- clean_REG
+DF_2017_8_23_cleanESP <- clean_ESP
+
+save(DF_2017_8_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_8_23.RData")
+save(DF_2017_8_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_8_23.RData")
+
+rm(S1_2017_8_23, S2_2017_8_23, S3_2017_8_23, DF_2017_8_23, DF_2017_8_23_cleanREG, DF_2017_8_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("August2017, ...done")
+print(Sys.time())
+
+#July
+
+print("July2017, cleaning...")
+print(Sys.time())
+
+S1_2017_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/7/S1_2017_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_7_23 <- select(S1_2017_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/7/S2_2017_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_7_23 <- select(S2_2017_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/7/S3_2017_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_7_23 <- select(S3_2017_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_7_23 <- rbind(S1_2017_7_23, S2_2017_7_23, S3_2017_7_23)
+
+save(DF_2017_7_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_7_23.RData")
+
+vector <- as.vector(DF_2017_7_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_7_23_cleanREG <- clean_REG
+DF_2017_7_23_cleanESP <- clean_ESP
+
+save(DF_2017_7_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_7_23.RData")
+save(DF_2017_7_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_7_23.RData")
+
+rm(S1_2017_7_23, S2_2017_7_23, S3_2017_7_23, DF_2017_7_23, DF_2017_7_23_cleanREG, DF_2017_7_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("July2017, ...done")
+print(Sys.time())
+
+#June
+
+print("June2017, cleaning...")
+print(Sys.time())
+
+S1_2017_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/6/S1_2017_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_6_23 <- select(S1_2017_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/6/S2_2017_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_6_23 <- select(S2_2017_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/6/S3_2017_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_6_23 <- select(S3_2017_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_6_23 <- rbind(S1_2017_6_23, S2_2017_6_23, S3_2017_6_23)
+
+save(DF_2017_6_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_6_23.RData")
+
+vector <- as.vector(DF_2017_6_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_6_23_cleanREG <- clean_REG
+DF_2017_6_23_cleanESP <- clean_ESP
+
+save(DF_2017_6_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_6_23.RData")
+save(DF_2017_6_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_6_23.RData")
+
+rm(S1_2017_6_23, S2_2017_6_23, S3_2017_6_23, DF_2017_6_23, DF_2017_6_23_cleanREG, DF_2017_6_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("June2017, ...done")
+print(Sys.time())
+
+#May
+
+print("May2017, cleaning...")
+print(Sys.time())
+
+S1_2017_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/5/S1_2017_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_5_23 <- select(S1_2017_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/5/S2_2017_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_5_23 <- select(S2_2017_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/5/S3_2017_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_5_23 <- select(S3_2017_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_5_23 <- rbind(S1_2017_5_23, S2_2017_5_23, S3_2017_5_23)
+
+save(DF_2017_5_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_5_23.RData")
+
+vector <- as.vector(DF_2017_5_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_5_23_cleanREG <- clean_REG
+DF_2017_5_23_cleanESP <- clean_ESP
+
+save(DF_2017_5_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_5_23.RData")
+save(DF_2017_5_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_5_23.RData")
+
+rm(S1_2017_5_23, S2_2017_5_23, S3_2017_5_23, DF_2017_5_23, DF_2017_5_23_cleanREG, DF_2017_5_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("May2017, ...done")
+print(Sys.time())
+
+#April
+
+print("April2017, cleaning...")
+print(Sys.time())
+
+S1_2017_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/4/S1_2017_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_4_23 <- select(S1_2017_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/4/S2_2017_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_4_23 <- select(S2_2017_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/4/S3_2017_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_4_23 <- select(S3_2017_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_4_23 <- rbind(S1_2017_4_23, S2_2017_4_23, S3_2017_4_23)
+
+save(DF_2017_4_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_4_23.RData")
+
+vector <- as.vector(DF_2017_4_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_4_23_cleanREG <- clean_REG
+DF_2017_4_23_cleanESP <- clean_ESP
+
+save(DF_2017_4_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_4_23.RData")
+save(DF_2017_4_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_4_23.RData")
+
+rm(S1_2017_4_23, S2_2017_4_23, S3_2017_4_23, DF_2017_4_23, DF_2017_4_23_cleanREG, DF_2017_4_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("April2017, ...done")
+print(Sys.time())
+
+#March
+
+print("March2017, cleaning...")
+print(Sys.time())
+
+S1_2017_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/3/S1_2017_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_3_23 <- select(S1_2017_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/3/S2_2017_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_3_23 <- select(S2_2017_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/3/S3_2017_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_3_23 <- select(S3_2017_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_3_23 <- rbind(S1_2017_3_23, S2_2017_3_23, S3_2017_3_23)
+
+save(DF_2017_3_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_3_23.RData")
+
+vector <- as.vector(DF_2017_3_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_3_23_cleanREG <- clean_REG
+DF_2017_3_23_cleanESP <- clean_ESP
+
+save(DF_2017_3_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_3_23.RData")
+save(DF_2017_3_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_3_23.RData")
+
+rm(S1_2017_3_23, S2_2017_3_23, S3_2017_3_23, DF_2017_3_23, DF_2017_3_23_cleanREG, DF_2017_3_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("March2017, ...done")
+print(Sys.time())
+
+#February
+
+print("February2017, cleaning...")
+print(Sys.time())
+
+S1_2017_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/2/S1_2017_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_2_23 <- select(S1_2017_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/2/S2_2017_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_2_23 <- select(S2_2017_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/2/S3_2017_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_2_23 <- select(S3_2017_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_2_23 <- rbind(S1_2017_2_23, S2_2017_2_23, S3_2017_2_23)
+
+save(DF_2017_2_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_2_23.RData")
+
+vector <- as.vector(DF_2017_2_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_2_23_cleanREG <- clean_REG
+DF_2017_2_23_cleanESP <- clean_ESP
+
+save(DF_2017_2_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_2_23.RData")
+save(DF_2017_2_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_2_23.RData")
+
+rm(S1_2017_2_23, S2_2017_2_23, S3_2017_2_23, DF_2017_2_23, DF_2017_2_23_cleanREG, DF_2017_2_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("February2017, ...done")
+print(Sys.time())
+
+#January
+
+print("January2017, cleaning...")
+print(Sys.time())
+
+S1_2017_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/1/S1_2017_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2017_1_23 <- select(S1_2017_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2017_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/1/S2_2017_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2017_1_23 <- select(S2_2017_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2017_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2017/1/S3_2017_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2017_1_23 <- select(S3_2017_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2017_1_23 <- rbind(S1_2017_1_23, S2_2017_1_23, S3_2017_1_23)
+
+save(DF_2017_1_23, file = "Objects/Tweets/Series_23/Dirty/DF_2017_1_23.RData")
+
+vector <- as.vector(DF_2017_1_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2017_1_23_cleanREG <- clean_REG
+DF_2017_1_23_cleanESP <- clean_ESP
+
+save(DF_2017_1_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2017_1_23.RData")
+save(DF_2017_1_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2017_1_23.RData")
+
+rm(S1_2017_1_23, S2_2017_1_23, S3_2017_1_23, DF_2017_1_23, DF_2017_1_23_cleanREG, DF_2017_1_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("January2017, ...done")
+print(Sys.time())
+
+#---2016---
+
+#December
+
+print("December2016, cleaning...")
+print(Sys.time())
+
+S1_2016_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/12/S1_2016_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_12_23 <- select(S1_2016_12_23, c("username", "date", "text"))
+
+S2_2016_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/12/S2_2016_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_12_23 <- select(S2_2016_12_23, c("username", "date", "text"))
+
+S3_2016_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/12/S3_2016_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_12_23 <- select(S3_2016_12_23, c("username", "date", "text"))
+
+DF_2016_12_23 <- rbind(S1_2016_12_23, S2_2016_12_23, S3_2016_12_23)
+
+save(DF_2016_12_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_12_23.RData")
+
+vector <- as.vector(DF_2016_12_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_12_23_cleanREG <- clean_REG
+DF_2016_12_23_cleanESP <- clean_ESP
+
+save(DF_2016_12_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_12_23.RData")
+save(DF_2016_12_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_12_23.RData")
+
+rm(S1_2016_12_23, S2_2016_12_23, S3_2016_12_23, DF_2016_12_23, DF_2016_12_23_cleanREG, DF_2016_12_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("December2016, ...done")
+print(Sys.time())
+
+#November
+
+print("November2016, cleaning...")
+print(Sys.time())
+
+S1_2016_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/11/S1_2016_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_11_23 <- select(S1_2016_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/11/S2_2016_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_11_23 <- select(S2_2016_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/11/S3_2016_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_11_23 <- select(S3_2016_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_11_23 <- rbind(S1_2016_11_23, S2_2016_11_23, S3_2016_11_23)
+
+save(DF_2016_11_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_11_23.RData")
+
+vector <- as.vector(DF_2016_11_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_11_23_cleanREG <- clean_REG
+DF_2016_11_23_cleanESP <- clean_ESP
+
+save(DF_2016_11_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_11_23.RData")
+save(DF_2016_11_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_11_23.RData")
+
+rm(S1_2016_11_23, S2_2016_11_23, S3_2016_11_23, DF_2016_11_23, DF_2016_11_23_cleanREG, DF_2016_11_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("November2016, ...done")
+print(Sys.time())
+
+#October
+
+print("October2016, cleaning...")
+print(Sys.time())
+
+S1_2016_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/10/S1_2016_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_10_23 <- select(S1_2016_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/10/S2_2016_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_10_23 <- select(S2_2016_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/10/S3_2016_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_10_23 <- select(S3_2016_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_10_23 <- rbind(S1_2016_10_23, S2_2016_10_23, S3_2016_10_23)
+
+save(DF_2016_10_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_10_23.RData")
+
+vector <- as.vector(DF_2016_10_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_10_23_cleanREG <- clean_REG
+DF_2016_10_23_cleanESP <- clean_ESP
+
+save(DF_2016_10_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_10_23.RData")
+save(DF_2016_10_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_10_23.RData")
+
+rm(S1_2016_10_23, S2_2016_10_23, S3_2016_10_23, DF_2016_10_23, DF_2016_10_23_cleanREG, DF_2016_10_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("October2016, ...done")
+print(Sys.time())
+
+#September
+
+print("September2016, cleaning...")
+print(Sys.time())
+
+S1_2016_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/9/S1_2016_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_9_23 <- select(S1_2016_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/9/S2_2016_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_9_23 <- select(S2_2016_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/9/S3_2016_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_9_23 <- select(S3_2016_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_9_23 <- rbind(S1_2016_9_23, S2_2016_9_23, S3_2016_9_23)
+
+save(DF_2016_9_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_9_23.RData")
+
+vector <- as.vector(DF_2016_9_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_9_23_cleanREG <- clean_REG
+DF_2016_9_23_cleanESP <- clean_ESP
+
+save(DF_2016_9_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_9_23.RData")
+save(DF_2016_9_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_9_23.RData")
+
+rm(S1_2016_9_23, S2_2016_9_23, S3_2016_9_23, DF_2016_9_23, DF_2016_9_23_cleanREG, DF_2016_9_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("September2016, ...done")
+print(Sys.time())
+
+#August
+
+print("August2016, cleaning...")
+print(Sys.time())
+
+S1_2016_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/8/S1_2016_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_8_23 <- select(S1_2016_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/8/S2_2016_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_8_23 <- select(S2_2016_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/8/S3_2016_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_8_23 <- select(S3_2016_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_8_23 <- rbind(S1_2016_8_23, S2_2016_8_23, S3_2016_8_23)
+
+save(DF_2016_8_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_8_23.RData")
+
+vector <- as.vector(DF_2016_8_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_8_23_cleanREG <- clean_REG
+DF_2016_8_23_cleanESP <- clean_ESP
+
+save(DF_2016_8_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_8_23.RData")
+save(DF_2016_8_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_8_23.RData")
+
+rm(S1_2016_8_23, S2_2016_8_23, S3_2016_8_23, DF_2016_8_23, DF_2016_8_23_cleanREG, DF_2016_8_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("August2016, ...done")
+print(Sys.time())
+
+#July
+
+print("July2016, cleaning...")
+print(Sys.time())
+
+S1_2016_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/7/S1_2016_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_7_23 <- select(S1_2016_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/7/S2_2016_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_7_23 <- select(S2_2016_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/7/S3_2016_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_7_23 <- select(S3_2016_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_7_23 <- rbind(S1_2016_7_23, S2_2016_7_23, S3_2016_7_23)
+
+save(DF_2016_7_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_7_23.RData")
+
+vector <- as.vector(DF_2016_7_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_7_23_cleanREG <- clean_REG
+DF_2016_7_23_cleanESP <- clean_ESP
+
+save(DF_2016_7_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_7_23.RData")
+save(DF_2016_7_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_7_23.RData")
+
+rm(S1_2016_7_23, S2_2016_7_23, S3_2016_7_23, DF_2016_7_23, DF_2016_7_23_cleanREG, DF_2016_7_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("July2016, ...done")
+print(Sys.time())
+
+#June
+
+print("June2016, cleaning...")
+print(Sys.time())
+
+S1_2016_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/6/S1_2016_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_6_23 <- select(S1_2016_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/6/S2_2016_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_6_23 <- select(S2_2016_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/6/S3_2016_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_6_23 <- select(S3_2016_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_6_23 <- rbind(S1_2016_6_23, S2_2016_6_23, S3_2016_6_23)
+
+save(DF_2016_6_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_6_23.RData")
+
+vector <- as.vector(DF_2016_6_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_6_23_cleanREG <- clean_REG
+DF_2016_6_23_cleanESP <- clean_ESP
+
+save(DF_2016_6_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_6_23.RData")
+save(DF_2016_6_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_6_23.RData")
+
+rm(S1_2016_6_23, S2_2016_6_23, S3_2016_6_23, DF_2016_6_23, DF_2016_6_23_cleanREG, DF_2016_6_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("June2016, ...done")
+print(Sys.time())
+
+#May
+
+print("May2016, cleaning...")
+print(Sys.time())
+
+S1_2016_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/5/S1_2016_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_5_23 <- select(S1_2016_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/5/S2_2016_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_5_23 <- select(S2_2016_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/5/S3_2016_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_5_23 <- select(S3_2016_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_5_23 <- rbind(S1_2016_5_23, S2_2016_5_23, S3_2016_5_23)
+
+save(DF_2016_5_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_5_23.RData")
+
+vector <- as.vector(DF_2016_5_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_5_23_cleanREG <- clean_REG
+DF_2016_5_23_cleanESP <- clean_ESP
+
+save(DF_2016_5_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_5_23.RData")
+save(DF_2016_5_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_5_23.RData")
+
+rm(S1_2016_5_23, S2_2016_5_23, S3_2016_5_23, DF_2016_5_23, DF_2016_5_23_cleanREG, DF_2016_5_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("May2016, ...done")
+print(Sys.time())
+
+#April
+
+print("April2016, cleaning...")
+print(Sys.time())
+
+S1_2016_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/4/S1_2016_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_4_23 <- select(S1_2016_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/4/S2_2016_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_4_23 <- select(S2_2016_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/4/S3_2016_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_4_23 <- select(S3_2016_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_4_23 <- rbind(S1_2016_4_23, S2_2016_4_23, S3_2016_4_23)
+
+save(DF_2016_4_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_4_23.RData")
+
+vector <- as.vector(DF_2016_4_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_4_23_cleanREG <- clean_REG
+DF_2016_4_23_cleanESP <- clean_ESP
+
+save(DF_2016_4_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_4_23.RData")
+save(DF_2016_4_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_4_23.RData")
+
+rm(S1_2016_4_23, S2_2016_4_23, S3_2016_4_23, DF_2016_4_23, DF_2016_4_23_cleanREG, DF_2016_4_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("April2016, ...done")
+print(Sys.time())
+
+#March
+
+print("March2016, cleaning...")
+print(Sys.time())
+
+S1_2016_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/3/S1_2016_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_3_23 <- select(S1_2016_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/3/S2_2016_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_3_23 <- select(S2_2016_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/3/S3_2016_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_3_23 <- select(S3_2016_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_3_23 <- rbind(S1_2016_3_23, S2_2016_3_23, S3_2016_3_23)
+
+save(DF_2016_3_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_3_23.RData")
+
+vector <- as.vector(DF_2016_3_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_3_23_cleanREG <- clean_REG
+DF_2016_3_23_cleanESP <- clean_ESP
+
+save(DF_2016_3_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_3_23.RData")
+save(DF_2016_3_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_3_23.RData")
+
+rm(S1_2016_3_23, S2_2016_3_23, S3_2016_3_23, DF_2016_3_23, DF_2016_3_23_cleanREG, DF_2016_3_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("March2016, ...done")
+print(Sys.time())
+
+#February
+
+print("February2016, cleaning...")
+print(Sys.time())
+
+S1_2016_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/2/S1_2016_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_2_23 <- select(S1_2016_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/2/S2_2016_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_2_23 <- select(S2_2016_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/2/S3_2016_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_2_23 <- select(S3_2016_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_2_23 <- rbind(S1_2016_2_23, S2_2016_2_23, S3_2016_2_23)
+
+save(DF_2016_2_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_2_23.RData")
+
+vector <- as.vector(DF_2016_2_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_2_23_cleanREG <- clean_REG
+DF_2016_2_23_cleanESP <- clean_ESP
+
+save(DF_2016_2_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_2_23.RData")
+save(DF_2016_2_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_2_23.RData")
+
+rm(S1_2016_2_23, S2_2016_2_23, S3_2016_2_23, DF_2016_2_23, DF_2016_2_23_cleanREG, DF_2016_2_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("February2016, ...done")
+print(Sys.time())
+
+#January
+
+print("January2016, cleaning...")
+print(Sys.time())
+
+S1_2016_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/1/S1_2016_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2016_1_23 <- select(S1_2016_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2016_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/1/S2_2016_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2016_1_23 <- select(S2_2016_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2016_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2016/1/S3_2016_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2016_1_23 <- select(S3_2016_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2016_1_23 <- rbind(S1_2016_1_23, S2_2016_1_23, S3_2016_1_23)
+
+save(DF_2016_1_23, file = "Objects/Tweets/Series_23/Dirty/DF_2016_1_23.RData")
+
+vector <- as.vector(DF_2016_1_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2016_1_23_cleanREG <- clean_REG
+DF_2016_1_23_cleanESP <- clean_ESP
+
+save(DF_2016_1_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2016_1_23.RData")
+save(DF_2016_1_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2016_1_23.RData")
+
+rm(S1_2016_1_23, S2_2016_1_23, S3_2016_1_23, DF_2016_1_23, DF_2016_1_23_cleanREG, DF_2016_1_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("January2016, ...done")
+print(Sys.time())
+
+#---2015---
+
+#December
+
+print("December2015, cleaning...")
+print(Sys.time())
+
+S1_2015_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/12/S1_2015_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_12_23 <- select(S1_2015_12_23, c("username", "date", "text"))
+
+S2_2015_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/12/S2_2015_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_12_23 <- select(S2_2015_12_23, c("username", "date", "text"))
+
+S3_2015_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/12/S3_2015_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_12_23 <- select(S3_2015_12_23, c("username", "date", "text"))
+
+DF_2015_12_23 <- rbind(S1_2015_12_23, S2_2015_12_23, S3_2015_12_23)
+
+save(DF_2015_12_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_12_23.RData")
+
+vector <- as.vector(DF_2015_12_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_12_23_cleanREG <- clean_REG
+DF_2015_12_23_cleanESP <- clean_ESP
+
+save(DF_2015_12_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_12_23.RData")
+save(DF_2015_12_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_12_23.RData")
+
+rm(S1_2015_12_23, S2_2015_12_23, S3_2015_12_23, DF_2015_12_23, DF_2015_12_23_cleanREG, DF_2015_12_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("December2015, ...done")
+print(Sys.time())
+
+#November
+
+print("November2015, cleaning...")
+print(Sys.time())
+
+S1_2015_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/11/S1_2015_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_11_23 <- select(S1_2015_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/11/S2_2015_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_11_23 <- select(S2_2015_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/11/S3_2015_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_11_23 <- select(S3_2015_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_11_23 <- rbind(S1_2015_11_23, S2_2015_11_23, S3_2015_11_23)
+
+save(DF_2015_11_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_11_23.RData")
+
+vector <- as.vector(DF_2015_11_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_11_23_cleanREG <- clean_REG
+DF_2015_11_23_cleanESP <- clean_ESP
+
+save(DF_2015_11_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_11_23.RData")
+save(DF_2015_11_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_11_23.RData")
+
+rm(S1_2015_11_23, S2_2015_11_23, S3_2015_11_23, DF_2015_11_23, DF_2015_11_23_cleanREG, DF_2015_11_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("November2015, ...done")
+print(Sys.time())
+
+#October
+
+print("October2015, cleaning...")
+print(Sys.time())
+
+S1_2015_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/10/S1_2015_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_10_23 <- select(S1_2015_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/10/S2_2015_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_10_23 <- select(S2_2015_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/10/S3_2015_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_10_23 <- select(S3_2015_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_10_23 <- rbind(S1_2015_10_23, S2_2015_10_23, S3_2015_10_23)
+
+save(DF_2015_10_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_10_23.RData")
+
+vector <- as.vector(DF_2015_10_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_10_23_cleanREG <- clean_REG
+DF_2015_10_23_cleanESP <- clean_ESP
+
+save(DF_2015_10_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_10_23.RData")
+save(DF_2015_10_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_10_23.RData")
+
+rm(S1_2015_10_23, S2_2015_10_23, S3_2015_10_23, DF_2015_10_23, DF_2015_10_23_cleanREG, DF_2015_10_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("October2015, ...done")
+print(Sys.time())
+
+#September
+
+print("September2015, cleaning...")
+print(Sys.time())
+
+S1_2015_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/9/S1_2015_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_9_23 <- select(S1_2015_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/9/S2_2015_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_9_23 <- select(S2_2015_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/9/S3_2015_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_9_23 <- select(S3_2015_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_9_23 <- rbind(S1_2015_9_23, S2_2015_9_23, S3_2015_9_23)
+
+save(DF_2015_9_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_9_23.RData")
+
+vector <- as.vector(DF_2015_9_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_9_23_cleanREG <- clean_REG
+DF_2015_9_23_cleanESP <- clean_ESP
+
+save(DF_2015_9_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_9_23.RData")
+save(DF_2015_9_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_9_23.RData")
+
+rm(S1_2015_9_23, S2_2015_9_23, S3_2015_9_23, DF_2015_9_23, DF_2015_9_23_cleanREG, DF_2015_9_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("September2015, ...done")
+print(Sys.time())
+
+#August
+
+print("August2015, cleaning...")
+print(Sys.time())
+
+S1_2015_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/8/S1_2015_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_8_23 <- select(S1_2015_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/8/S2_2015_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_8_23 <- select(S2_2015_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/8/S3_2015_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_8_23 <- select(S3_2015_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_8_23 <- rbind(S1_2015_8_23, S2_2015_8_23, S3_2015_8_23)
+
+save(DF_2015_8_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_8_23.RData")
+
+vector <- as.vector(DF_2015_8_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_8_23_cleanREG <- clean_REG
+DF_2015_8_23_cleanESP <- clean_ESP
+
+save(DF_2015_8_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_8_23.RData")
+save(DF_2015_8_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_8_23.RData")
+
+rm(S1_2015_8_23, S2_2015_8_23, S3_2015_8_23, DF_2015_8_23, DF_2015_8_23_cleanREG, DF_2015_8_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("August2015, ...done")
+print(Sys.time())
+
+#July
+
+print("July2015, cleaning...")
+print(Sys.time())
+
+S1_2015_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/7/S1_2015_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_7_23 <- select(S1_2015_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/7/S2_2015_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_7_23 <- select(S2_2015_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/7/S3_2015_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_7_23 <- select(S3_2015_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_7_23 <- rbind(S1_2015_7_23, S2_2015_7_23, S3_2015_7_23)
+
+save(DF_2015_7_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_7_23.RData")
+
+vector <- as.vector(DF_2015_7_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_7_23_cleanREG <- clean_REG
+DF_2015_7_23_cleanESP <- clean_ESP
+
+save(DF_2015_7_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_7_23.RData")
+save(DF_2015_7_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_7_23.RData")
+
+rm(S1_2015_7_23, S2_2015_7_23, S3_2015_7_23, DF_2015_7_23, DF_2015_7_23_cleanREG, DF_2015_7_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("July2015, ...done")
+print(Sys.time())
+
+#June
+
+print("June2015, cleaning...")
+print(Sys.time())
+
+S1_2015_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/6/S1_2015_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_6_23 <- select(S1_2015_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/6/S2_2015_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_6_23 <- select(S2_2015_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/6/S3_2015_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_6_23 <- select(S3_2015_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_6_23 <- rbind(S1_2015_6_23, S2_2015_6_23, S3_2015_6_23)
+
+save(DF_2015_6_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_6_23.RData")
+
+vector <- as.vector(DF_2015_6_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_6_23_cleanREG <- clean_REG
+DF_2015_6_23_cleanESP <- clean_ESP
+
+save(DF_2015_6_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_6_23.RData")
+save(DF_2015_6_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_6_23.RData")
+
+rm(S1_2015_6_23, S2_2015_6_23, S3_2015_6_23, DF_2015_6_23, DF_2015_6_23_cleanREG, DF_2015_6_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("June2015, ...done")
+print(Sys.time())
+
+#May
+
+print("May2015, cleaning...")
+print(Sys.time())
+
+S1_2015_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/5/S1_2015_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_5_23 <- select(S1_2015_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/5/S2_2015_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_5_23 <- select(S2_2015_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/5/S3_2015_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_5_23 <- select(S3_2015_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_5_23 <- rbind(S1_2015_5_23, S2_2015_5_23, S3_2015_5_23)
+
+save(DF_2015_5_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_5_23.RData")
+
+vector <- as.vector(DF_2015_5_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_5_23_cleanREG <- clean_REG
+DF_2015_5_23_cleanESP <- clean_ESP
+
+save(DF_2015_5_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_5_23.RData")
+save(DF_2015_5_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_5_23.RData")
+
+rm(S1_2015_5_23, S2_2015_5_23, S3_2015_5_23, DF_2015_5_23, DF_2015_5_23_cleanREG, DF_2015_5_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("May2015, ...done")
+print(Sys.time())
+
+#April
+
+print("April2015, cleaning...")
+print(Sys.time())
+
+S1_2015_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/4/S1_2015_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_4_23 <- select(S1_2015_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/4/S2_2015_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_4_23 <- select(S2_2015_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/4/S3_2015_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_4_23 <- select(S3_2015_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_4_23 <- rbind(S1_2015_4_23, S2_2015_4_23, S3_2015_4_23)
+
+save(DF_2015_4_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_4_23.RData")
+
+vector <- as.vector(DF_2015_4_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_4_23_cleanREG <- clean_REG
+DF_2015_4_23_cleanESP <- clean_ESP
+
+save(DF_2015_4_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_4_23.RData")
+save(DF_2015_4_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_4_23.RData")
+
+rm(S1_2015_4_23, S2_2015_4_23, S3_2015_4_23, DF_2015_4_23, DF_2015_4_23_cleanREG, DF_2015_4_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("April2015, ...done")
+print(Sys.time())
+
+#March
+
+print("March2015, cleaning...")
+print(Sys.time())
+
+S1_2015_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/3/S1_2015_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_3_23 <- select(S1_2015_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/3/S2_2015_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_3_23 <- select(S2_2015_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/3/S3_2015_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_3_23 <- select(S3_2015_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_3_23 <- rbind(S1_2015_3_23, S2_2015_3_23, S3_2015_3_23)
+
+save(DF_2015_3_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_3_23.RData")
+
+vector <- as.vector(DF_2015_3_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_3_23_cleanREG <- clean_REG
+DF_2015_3_23_cleanESP <- clean_ESP
+
+save(DF_2015_3_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_3_23.RData")
+save(DF_2015_3_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_3_23.RData")
+
+rm(S1_2015_3_23, S2_2015_3_23, S3_2015_3_23, DF_2015_3_23, DF_2015_3_23_cleanREG, DF_2015_3_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("March2015, ...done")
+print(Sys.time())
+
+#February
+
+print("February2015, cleaning...")
+print(Sys.time())
+
+S1_2015_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/2/S1_2015_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_2_23 <- select(S1_2015_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/2/S2_2015_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_2_23 <- select(S2_2015_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/2/S3_2015_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_2_23 <- select(S3_2015_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_2_23 <- rbind(S1_2015_2_23, S2_2015_2_23, S3_2015_2_23)
+
+save(DF_2015_2_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_2_23.RData")
+
+vector <- as.vector(DF_2015_2_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_2_23_cleanREG <- clean_REG
+DF_2015_2_23_cleanESP <- clean_ESP
+
+save(DF_2015_2_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_2_23.RData")
+save(DF_2015_2_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_2_23.RData")
+
+rm(S1_2015_2_23, S2_2015_2_23, S3_2015_2_23, DF_2015_2_23, DF_2015_2_23_cleanREG, DF_2015_2_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("February2015, ...done")
+print(Sys.time())
+
+#January
+
+print("January2015, cleaning...")
+print(Sys.time())
+
+S1_2015_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/1/S1_2015_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2015_1_23 <- select(S1_2015_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2015_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/1/S2_2015_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2015_1_23 <- select(S2_2015_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2015_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2015/1/S3_2015_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2015_1_23 <- select(S3_2015_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2015_1_23 <- rbind(S1_2015_1_23, S2_2015_1_23, S3_2015_1_23)
+
+save(DF_2015_1_23, file = "Objects/Tweets/Series_23/Dirty/DF_2015_1_23.RData")
+
+vector <- as.vector(DF_2015_1_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2015_1_23_cleanREG <- clean_REG
+DF_2015_1_23_cleanESP <- clean_ESP
+
+save(DF_2015_1_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2015_1_23.RData")
+save(DF_2015_1_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2015_1_23.RData")
+
+rm(S1_2015_1_23, S2_2015_1_23, S3_2015_1_23, DF_2015_1_23, DF_2015_1_23_cleanREG, DF_2015_1_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("January2015, ...done")
+print(Sys.time())
+
+#---2014---
+
+#December
+
+print("December2014, cleaning...")
+print(Sys.time())
+
+S1_2014_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/12/S1_2014_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_12_23 <- select(S1_2014_12_23, c("username", "date", "text"))
+
+S2_2014_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/12/S2_2014_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_12_23 <- select(S2_2014_12_23, c("username", "date", "text"))
+
+S3_2014_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/12/S3_2014_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_12_23 <- select(S3_2014_12_23, c("username", "date", "text"))
+
+DF_2014_12_23 <- rbind(S1_2014_12_23, S2_2014_12_23, S3_2014_12_23)
+
+save(DF_2014_12_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_12_23.RData")
+
+vector <- as.vector(DF_2014_12_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_12_23_cleanREG <- clean_REG
+DF_2014_12_23_cleanESP <- clean_ESP
+
+save(DF_2014_12_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_12_23.RData")
+save(DF_2014_12_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_12_23.RData")
+
+rm(S1_2014_12_23, S2_2014_12_23, S3_2014_12_23, DF_2014_12_23, DF_2014_12_23_cleanREG, DF_2014_12_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("December2014, ...done")
+print(Sys.time())
+
+#November
+
+print("November2014, cleaning...")
+print(Sys.time())
+
+S1_2014_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/11/S1_2014_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_11_23 <- select(S1_2014_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/11/S2_2014_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_11_23 <- select(S2_2014_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/11/S3_2014_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_11_23 <- select(S3_2014_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_11_23 <- rbind(S1_2014_11_23, S2_2014_11_23, S3_2014_11_23)
+
+save(DF_2014_11_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_11_23.RData")
+
+vector <- as.vector(DF_2014_11_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_11_23_cleanREG <- clean_REG
+DF_2014_11_23_cleanESP <- clean_ESP
+
+save(DF_2014_11_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_11_23.RData")
+save(DF_2014_11_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_11_23.RData")
+
+rm(S1_2014_11_23, S2_2014_11_23, S3_2014_11_23, DF_2014_11_23, DF_2014_11_23_cleanREG, DF_2014_11_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("November2014, ...done")
+print(Sys.time())
+
+#October
+
+print("October2014, cleaning...")
+print(Sys.time())
+
+S1_2014_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/10/S1_2014_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_10_23 <- select(S1_2014_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/10/S2_2014_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_10_23 <- select(S2_2014_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/10/S3_2014_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_10_23 <- select(S3_2014_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_10_23 <- rbind(S1_2014_10_23, S2_2014_10_23, S3_2014_10_23)
+
+save(DF_2014_10_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_10_23.RData")
+
+vector <- as.vector(DF_2014_10_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_10_23_cleanREG <- clean_REG
+DF_2014_10_23_cleanESP <- clean_ESP
+
+save(DF_2014_10_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_10_23.RData")
+save(DF_2014_10_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_10_23.RData")
+
+rm(S1_2014_10_23, S2_2014_10_23, S3_2014_10_23, DF_2014_10_23, DF_2014_10_23_cleanREG, DF_2014_10_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("October2014, ...done")
+print(Sys.time())
+
+#September
+
+print("September2014, cleaning...")
+print(Sys.time())
+
+S1_2014_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/9/S1_2014_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_9_23 <- select(S1_2014_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/9/S2_2014_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_9_23 <- select(S2_2014_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/9/S3_2014_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_9_23 <- select(S3_2014_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_9_23 <- rbind(S1_2014_9_23, S2_2014_9_23, S3_2014_9_23)
+
+save(DF_2014_9_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_9_23.RData")
+
+vector <- as.vector(DF_2014_9_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_9_23_cleanREG <- clean_REG
+DF_2014_9_23_cleanESP <- clean_ESP
+
+save(DF_2014_9_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_9_23.RData")
+save(DF_2014_9_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_9_23.RData")
+
+rm(S1_2014_9_23, S2_2014_9_23, S3_2014_9_23, DF_2014_9_23, DF_2014_9_23_cleanREG, DF_2014_9_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("September2014, ...done")
+print(Sys.time())
+
+#August
+
+print("August2014, cleaning...")
+print(Sys.time())
+
+S1_2014_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/8/S1_2014_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_8_23 <- select(S1_2014_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/8/S2_2014_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_8_23 <- select(S2_2014_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/8/S3_2014_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_8_23 <- select(S3_2014_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_8_23 <- rbind(S1_2014_8_23, S2_2014_8_23, S3_2014_8_23)
+
+save(DF_2014_8_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_8_23.RData")
+
+vector <- as.vector(DF_2014_8_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_8_23_cleanREG <- clean_REG
+DF_2014_8_23_cleanESP <- clean_ESP
+
+save(DF_2014_8_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_8_23.RData")
+save(DF_2014_8_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_8_23.RData")
+
+rm(S1_2014_8_23, S2_2014_8_23, S3_2014_8_23, DF_2014_8_23, DF_2014_8_23_cleanREG, DF_2014_8_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("August2014, ...done")
+print(Sys.time())
+
+#July
+
+print("July2014, cleaning...")
+print(Sys.time())
+
+S1_2014_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/7/S1_2014_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_7_23 <- select(S1_2014_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/7/S2_2014_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_7_23 <- select(S2_2014_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/7/S3_2014_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_7_23 <- select(S3_2014_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_7_23 <- rbind(S1_2014_7_23, S2_2014_7_23, S3_2014_7_23)
+
+save(DF_2014_7_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_7_23.RData")
+
+vector <- as.vector(DF_2014_7_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_7_23_cleanREG <- clean_REG
+DF_2014_7_23_cleanESP <- clean_ESP
+
+save(DF_2014_7_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_7_23.RData")
+save(DF_2014_7_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_7_23.RData")
+
+rm(S1_2014_7_23, S2_2014_7_23, S3_2014_7_23, DF_2014_7_23, DF_2014_7_23_cleanREG, DF_2014_7_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("July2014, ...done")
+print(Sys.time())
+
+#June
+
+print("June2014, cleaning...")
+print(Sys.time())
+
+S1_2014_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/6/S1_2014_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_6_23 <- select(S1_2014_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/6/S2_2014_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_6_23 <- select(S2_2014_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/6/S3_2014_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_6_23 <- select(S3_2014_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_6_23 <- rbind(S1_2014_6_23, S2_2014_6_23, S3_2014_6_23)
+
+save(DF_2014_6_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_6_23.RData")
+
+vector <- as.vector(DF_2014_6_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_6_23_cleanREG <- clean_REG
+DF_2014_6_23_cleanESP <- clean_ESP
+
+save(DF_2014_6_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_6_23.RData")
+save(DF_2014_6_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_6_23.RData")
+
+rm(S1_2014_6_23, S2_2014_6_23, S3_2014_6_23, DF_2014_6_23, DF_2014_6_23_cleanREG, DF_2014_6_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("June2014, ...done")
+print(Sys.time())
+
+#May
+
+print("May2014, cleaning...")
+print(Sys.time())
+
+S1_2014_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/5/S1_2014_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_5_23 <- select(S1_2014_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/5/S2_2014_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_5_23 <- select(S2_2014_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/5/S3_2014_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_5_23 <- select(S3_2014_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_5_23 <- rbind(S1_2014_5_23, S2_2014_5_23, S3_2014_5_23)
+
+save(DF_2014_5_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_5_23.RData")
+
+vector <- as.vector(DF_2014_5_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_5_23_cleanREG <- clean_REG
+DF_2014_5_23_cleanESP <- clean_ESP
+
+save(DF_2014_5_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_5_23.RData")
+save(DF_2014_5_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_5_23.RData")
+
+rm(S1_2014_5_23, S2_2014_5_23, S3_2014_5_23, DF_2014_5_23, DF_2014_5_23_cleanREG, DF_2014_5_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("May2014, ...done")
+print(Sys.time())
+
+#April
+
+print("April2014, cleaning...")
+print(Sys.time())
+
+S1_2014_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/4/S1_2014_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_4_23 <- select(S1_2014_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/4/S2_2014_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_4_23 <- select(S2_2014_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/4/S3_2014_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_4_23 <- select(S3_2014_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_4_23 <- rbind(S1_2014_4_23, S2_2014_4_23, S3_2014_4_23)
+
+save(DF_2014_4_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_4_23.RData")
+
+vector <- as.vector(DF_2014_4_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_4_23_cleanREG <- clean_REG
+DF_2014_4_23_cleanESP <- clean_ESP
+
+save(DF_2014_4_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_4_23.RData")
+save(DF_2014_4_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_4_23.RData")
+
+rm(S1_2014_4_23, S2_2014_4_23, S3_2014_4_23, DF_2014_4_23, DF_2014_4_23_cleanREG, DF_2014_4_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("April2014, ...done")
+print(Sys.time())
+
+#March
+
+print("March2014, cleaning...")
+print(Sys.time())
+
+S1_2014_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/3/S1_2014_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_3_23 <- select(S1_2014_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/3/S2_2014_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_3_23 <- select(S2_2014_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/3/S3_2014_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_3_23 <- select(S3_2014_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_3_23 <- rbind(S1_2014_3_23, S2_2014_3_23, S3_2014_3_23)
+
+save(DF_2014_3_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_3_23.RData")
+
+vector <- as.vector(DF_2014_3_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_3_23_cleanREG <- clean_REG
+DF_2014_3_23_cleanESP <- clean_ESP
+
+save(DF_2014_3_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_3_23.RData")
+save(DF_2014_3_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_3_23.RData")
+
+rm(S1_2014_3_23, S2_2014_3_23, S3_2014_3_23, DF_2014_3_23, DF_2014_3_23_cleanREG, DF_2014_3_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("March2014, ...done")
+print(Sys.time())
+
+#February
+
+print("February2014, cleaning...")
+print(Sys.time())
+
+S1_2014_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/2/S1_2014_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_2_23 <- select(S1_2014_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/2/S2_2014_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_2_23 <- select(S2_2014_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/2/S3_2014_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_2_23 <- select(S3_2014_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_2_23 <- rbind(S1_2014_2_23, S2_2014_2_23, S3_2014_2_23)
+
+save(DF_2014_2_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_2_23.RData")
+
+vector <- as.vector(DF_2014_2_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_2_23_cleanREG <- clean_REG
+DF_2014_2_23_cleanESP <- clean_ESP
+
+save(DF_2014_2_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_2_23.RData")
+save(DF_2014_2_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_2_23.RData")
+
+rm(S1_2014_2_23, S2_2014_2_23, S3_2014_2_23, DF_2014_2_23, DF_2014_2_23_cleanREG, DF_2014_2_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("February2014, ...done")
+print(Sys.time())
+
+#January
+
+print("January2014, cleaning...")
+print(Sys.time())
+
+S1_2014_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/1/S1_2014_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2014_1_23 <- select(S1_2014_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2014_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/1/S2_2014_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2014_1_23 <- select(S2_2014_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2014_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2014/1/S3_2014_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2014_1_23 <- select(S3_2014_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2014_1_23 <- rbind(S1_2014_1_23, S2_2014_1_23, S3_2014_1_23)
+
+save(DF_2014_1_23, file = "Objects/Tweets/Series_23/Dirty/DF_2014_1_23.RData")
+
+vector <- as.vector(DF_2014_1_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2014_1_23_cleanREG <- clean_REG
+DF_2014_1_23_cleanESP <- clean_ESP
+
+save(DF_2014_1_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2014_1_23.RData")
+save(DF_2014_1_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2014_1_23.RData")
+
+rm(S1_2014_1_23, S2_2014_1_23, S3_2014_1_23, DF_2014_1_23, DF_2014_1_23_cleanREG, DF_2014_1_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("January2014, ...done")
+print(Sys.time())
+
+#---2013---
+
+#December
+
+print("December2013, cleaning...")
+print(Sys.time())
+
+S1_2013_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/12/S1_2013_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_12_23 <- select(S1_2013_12_23, c("username", "date", "text"))
+
+S2_2013_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/12/S2_2013_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_12_23 <- select(S2_2013_12_23, c("username", "date", "text"))
+
+S3_2013_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/12/S3_2013_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_12_23 <- select(S3_2013_12_23, c("username", "date", "text"))
+
+DF_2013_12_23 <- rbind(S1_2013_12_23, S2_2013_12_23, S3_2013_12_23)
+
+save(DF_2013_12_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_12_23.RData")
+
+vector <- as.vector(DF_2013_12_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_12_23_cleanREG <- clean_REG
+DF_2013_12_23_cleanESP <- clean_ESP
+
+save(DF_2013_12_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_12_23.RData")
+save(DF_2013_12_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_12_23.RData")
+
+rm(S1_2013_12_23, S2_2013_12_23, S3_2013_12_23, DF_2013_12_23, DF_2013_12_23_cleanREG, DF_2013_12_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("December2013, ...done")
+print(Sys.time())
+
+#November
+
+print("November2013, cleaning...")
+print(Sys.time())
+
+S1_2013_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/11/S1_2013_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_11_23 <- select(S1_2013_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/11/S2_2013_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_11_23 <- select(S2_2013_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/11/S3_2013_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_11_23 <- select(S3_2013_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_11_23 <- rbind(S1_2013_11_23, S2_2013_11_23, S3_2013_11_23)
+
+save(DF_2013_11_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_11_23.RData")
+
+vector <- as.vector(DF_2013_11_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_11_23_cleanREG <- clean_REG
+DF_2013_11_23_cleanESP <- clean_ESP
+
+save(DF_2013_11_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_11_23.RData")
+save(DF_2013_11_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_11_23.RData")
+
+rm(S1_2013_11_23, S2_2013_11_23, S3_2013_11_23, DF_2013_11_23, DF_2013_11_23_cleanREG, DF_2013_11_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("November2013, ...done")
+print(Sys.time())
+
+#October
+
+print("October2013, cleaning...")
+print(Sys.time())
+
+S1_2013_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/10/S1_2013_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_10_23 <- select(S1_2013_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/10/S2_2013_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_10_23 <- select(S2_2013_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/10/S3_2013_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_10_23 <- select(S3_2013_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_10_23 <- rbind(S1_2013_10_23, S2_2013_10_23, S3_2013_10_23)
+
+save(DF_2013_10_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_10_23.RData")
+
+vector <- as.vector(DF_2013_10_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_10_23_cleanREG <- clean_REG
+DF_2013_10_23_cleanESP <- clean_ESP
+
+save(DF_2013_10_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_10_23.RData")
+save(DF_2013_10_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_10_23.RData")
+
+rm(S1_2013_10_23, S2_2013_10_23, S3_2013_10_23, DF_2013_10_23, DF_2013_10_23_cleanREG, DF_2013_10_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("October2013, ...done")
+print(Sys.time())
+
+#September
+
+print("September2013, cleaning...")
+print(Sys.time())
+
+S1_2013_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/9/S1_2013_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_9_23 <- select(S1_2013_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/9/S2_2013_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_9_23 <- select(S2_2013_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/9/S3_2013_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_9_23 <- select(S3_2013_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_9_23 <- rbind(S1_2013_9_23, S2_2013_9_23, S3_2013_9_23)
+
+save(DF_2013_9_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_9_23.RData")
+
+vector <- as.vector(DF_2013_9_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_9_23_cleanREG <- clean_REG
+DF_2013_9_23_cleanESP <- clean_ESP
+
+save(DF_2013_9_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_9_23.RData")
+save(DF_2013_9_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_9_23.RData")
+
+rm(S1_2013_9_23, S2_2013_9_23, S3_2013_9_23, DF_2013_9_23, DF_2013_9_23_cleanREG, DF_2013_9_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("September2013, ...done")
+print(Sys.time())
+
+#August
+
+print("August2013, cleaning...")
+print(Sys.time())
+
+S1_2013_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/8/S1_2013_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_8_23 <- select(S1_2013_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/8/S2_2013_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_8_23 <- select(S2_2013_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/8/S3_2013_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_8_23 <- select(S3_2013_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_8_23 <- rbind(S1_2013_8_23, S2_2013_8_23, S3_2013_8_23)
+
+save(DF_2013_8_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_8_23.RData")
+
+vector <- as.vector(DF_2013_8_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_8_23_cleanREG <- clean_REG
+DF_2013_8_23_cleanESP <- clean_ESP
+
+save(DF_2013_8_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_8_23.RData")
+save(DF_2013_8_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_8_23.RData")
+
+rm(S1_2013_8_23, S2_2013_8_23, S3_2013_8_23, DF_2013_8_23, DF_2013_8_23_cleanREG, DF_2013_8_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("August2013, ...done")
+print(Sys.time())
+
+#July
+
+print("July2013, cleaning...")
+print(Sys.time())
+
+S1_2013_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/7/S1_2013_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_7_23 <- select(S1_2013_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/7/S2_2013_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_7_23 <- select(S2_2013_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/7/S3_2013_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_7_23 <- select(S3_2013_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_7_23 <- rbind(S1_2013_7_23, S2_2013_7_23, S3_2013_7_23)
+
+save(DF_2013_7_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_7_23.RData")
+
+vector <- as.vector(DF_2013_7_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_7_23_cleanREG <- clean_REG
+DF_2013_7_23_cleanESP <- clean_ESP
+
+save(DF_2013_7_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_7_23.RData")
+save(DF_2013_7_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_7_23.RData")
+
+rm(S1_2013_7_23, S2_2013_7_23, S3_2013_7_23, DF_2013_7_23, DF_2013_7_23_cleanREG, DF_2013_7_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("July2013, ...done")
+print(Sys.time())
+
+#June
+
+print("June2013, cleaning...")
+print(Sys.time())
+
+S1_2013_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/6/S1_2013_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_6_23 <- select(S1_2013_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/6/S2_2013_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_6_23 <- select(S2_2013_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/6/S3_2013_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_6_23 <- select(S3_2013_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_6_23 <- rbind(S1_2013_6_23, S2_2013_6_23, S3_2013_6_23)
+
+save(DF_2013_6_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_6_23.RData")
+
+vector <- as.vector(DF_2013_6_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_6_23_cleanREG <- clean_REG
+DF_2013_6_23_cleanESP <- clean_ESP
+
+save(DF_2013_6_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_6_23.RData")
+save(DF_2013_6_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_6_23.RData")
+
+rm(S1_2013_6_23, S2_2013_6_23, S3_2013_6_23, DF_2013_6_23, DF_2013_6_23_cleanREG, DF_2013_6_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("June2013, ...done")
+print(Sys.time())
+
+#May
+
+print("May2013, cleaning...")
+print(Sys.time())
+
+S1_2013_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/5/S1_2013_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_5_23 <- select(S1_2013_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/5/S2_2013_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_5_23 <- select(S2_2013_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/5/S3_2013_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_5_23 <- select(S3_2013_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_5_23 <- rbind(S1_2013_5_23, S2_2013_5_23, S3_2013_5_23)
+
+save(DF_2013_5_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_5_23.RData")
+
+vector <- as.vector(DF_2013_5_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_5_23_cleanREG <- clean_REG
+DF_2013_5_23_cleanESP <- clean_ESP
+
+save(DF_2013_5_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_5_23.RData")
+save(DF_2013_5_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_5_23.RData")
+
+rm(S1_2013_5_23, S2_2013_5_23, S3_2013_5_23, DF_2013_5_23, DF_2013_5_23_cleanREG, DF_2013_5_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("May2013, ...done")
+print(Sys.time())
+
+#April
+
+print("April2013, cleaning...")
+print(Sys.time())
+
+S1_2013_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/4/S1_2013_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_4_23 <- select(S1_2013_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/4/S2_2013_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_4_23 <- select(S2_2013_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/4/S3_2013_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_4_23 <- select(S3_2013_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_4_23 <- rbind(S1_2013_4_23, S2_2013_4_23, S3_2013_4_23)
+
+save(DF_2013_4_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_4_23.RData")
+
+vector <- as.vector(DF_2013_4_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_4_23_cleanREG <- clean_REG
+DF_2013_4_23_cleanESP <- clean_ESP
+
+save(DF_2013_4_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_4_23.RData")
+save(DF_2013_4_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_4_23.RData")
+
+rm(S1_2013_4_23, S2_2013_4_23, S3_2013_4_23, DF_2013_4_23, DF_2013_4_23_cleanREG, DF_2013_4_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("April2013, ...done")
+print(Sys.time())
+
+#March
+
+print("March2013, cleaning...")
+print(Sys.time())
+
+S1_2013_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/3/S1_2013_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_3_23 <- select(S1_2013_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/3/S2_2013_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_3_23 <- select(S2_2013_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/3/S3_2013_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_3_23 <- select(S3_2013_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_3_23 <- rbind(S1_2013_3_23, S2_2013_3_23, S3_2013_3_23)
+
+save(DF_2013_3_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_3_23.RData")
+
+vector <- as.vector(DF_2013_3_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_3_23_cleanREG <- clean_REG
+DF_2013_3_23_cleanESP <- clean_ESP
+
+save(DF_2013_3_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_3_23.RData")
+save(DF_2013_3_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_3_23.RData")
+
+rm(S1_2013_3_23, S2_2013_3_23, S3_2013_3_23, DF_2013_3_23, DF_2013_3_23_cleanREG, DF_2013_3_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("March2013, ...done")
+print(Sys.time())
+
+#February
+
+print("February2013, cleaning...")
+print(Sys.time())
+
+S1_2013_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/2/S1_2013_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_2_23 <- select(S1_2013_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/2/S2_2013_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_2_23 <- select(S2_2013_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/2/S3_2013_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_2_23 <- select(S3_2013_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_2_23 <- rbind(S1_2013_2_23, S2_2013_2_23, S3_2013_2_23)
+
+save(DF_2013_2_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_2_23.RData")
+
+vector <- as.vector(DF_2013_2_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_2_23_cleanREG <- clean_REG
+DF_2013_2_23_cleanESP <- clean_ESP
+
+save(DF_2013_2_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_2_23.RData")
+save(DF_2013_2_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_2_23.RData")
+
+rm(S1_2013_2_23, S2_2013_2_23, S3_2013_2_23, DF_2013_2_23, DF_2013_2_23_cleanREG, DF_2013_2_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("February2013, ...done")
+print(Sys.time())
+
+#January
+
+print("January2013, cleaning...")
+print(Sys.time())
+
+S1_2013_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/1/S1_2013_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2013_1_23 <- select(S1_2013_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2013_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/1/S2_2013_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2013_1_23 <- select(S2_2013_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2013_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2013/1/S3_2013_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2013_1_23 <- select(S3_2013_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2013_1_23 <- rbind(S1_2013_1_23, S2_2013_1_23, S3_2013_1_23)
+
+save(DF_2013_1_23, file = "Objects/Tweets/Series_23/Dirty/DF_2013_1_23.RData")
+
+vector <- as.vector(DF_2013_1_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2013_1_23_cleanREG <- clean_REG
+DF_2013_1_23_cleanESP <- clean_ESP
+
+save(DF_2013_1_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2013_1_23.RData")
+save(DF_2013_1_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2013_1_23.RData")
+
+rm(S1_2013_1_23, S2_2013_1_23, S3_2013_1_23, DF_2013_1_23, DF_2013_1_23_cleanREG, DF_2013_1_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("January2013, ...done")
+print(Sys.time())
+
+#---2012---
+
+#December
+
+print("December2012, cleaning...")
+print(Sys.time())
+
+S1_2012_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/12/S1_2012_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_12_23 <- select(S1_2012_12_23, c("username", "date", "text"))
+
+S2_2012_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/12/S2_2012_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_12_23 <- select(S2_2012_12_23, c("username", "date", "text"))
+
+S3_2012_12_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/12/S3_2012_12_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_12_23 <- select(S3_2012_12_23, c("username", "date", "text"))
+
+DF_2012_12_23 <- rbind(S1_2012_12_23, S2_2012_12_23, S3_2012_12_23)
+
+save(DF_2012_12_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_12_23.RData")
+
+vector <- as.vector(DF_2012_12_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_12_23_cleanREG <- clean_REG
+DF_2012_12_23_cleanESP <- clean_ESP
+
+save(DF_2012_12_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_12_23.RData")
+save(DF_2012_12_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_12_23.RData")
+
+rm(S1_2012_12_23, S2_2012_12_23, S3_2012_12_23, DF_2012_12_23, DF_2012_12_23_cleanREG, DF_2012_12_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("December2012, ...done")
+print(Sys.time())
+
+#November
+
+print("November2012, cleaning...")
+print(Sys.time())
+
+S1_2012_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/11/S1_2012_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_11_23 <- select(S1_2012_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/11/S2_2012_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_11_23 <- select(S2_2012_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_11_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/11/S3_2012_11_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_11_23 <- select(S3_2012_11_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_11_23 <- rbind(S1_2012_11_23, S2_2012_11_23, S3_2012_11_23)
+
+save(DF_2012_11_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_11_23.RData")
+
+vector <- as.vector(DF_2012_11_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_11_23_cleanREG <- clean_REG
+DF_2012_11_23_cleanESP <- clean_ESP
+
+save(DF_2012_11_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_11_23.RData")
+save(DF_2012_11_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_11_23.RData")
+
+rm(S1_2012_11_23, S2_2012_11_23, S3_2012_11_23, DF_2012_11_23, DF_2012_11_23_cleanREG, DF_2012_11_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("November2012, ...done")
+print(Sys.time())
+
+#October
+
+print("October2012, cleaning...")
+print(Sys.time())
+
+S1_2012_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/10/S1_2012_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_10_23 <- select(S1_2012_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/10/S2_2012_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_10_23 <- select(S2_2012_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_10_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/10/S3_2012_10_23.csv", 
+                                                              ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_10_23 <- select(S3_2012_10_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_10_23 <- rbind(S1_2012_10_23, S2_2012_10_23, S3_2012_10_23)
+
+save(DF_2012_10_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_10_23.RData")
+
+vector <- as.vector(DF_2012_10_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_10_23_cleanREG <- clean_REG
+DF_2012_10_23_cleanESP <- clean_ESP
+
+save(DF_2012_10_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_10_23.RData")
+save(DF_2012_10_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_10_23.RData")
+
+rm(S1_2012_10_23, S2_2012_10_23, S3_2012_10_23, DF_2012_10_23, DF_2012_10_23_cleanREG, DF_2012_10_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("October2012, ...done")
+print(Sys.time())
+
+#September
+
+print("September2012, cleaning...")
+print(Sys.time())
+
+S1_2012_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/9/S1_2012_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_9_23 <- select(S1_2012_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/9/S2_2012_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_9_23 <- select(S2_2012_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_9_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/9/S3_2012_9_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_9_23 <- select(S3_2012_9_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_9_23 <- rbind(S1_2012_9_23, S2_2012_9_23, S3_2012_9_23)
+
+save(DF_2012_9_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_9_23.RData")
+
+vector <- as.vector(DF_2012_9_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_9_23_cleanREG <- clean_REG
+DF_2012_9_23_cleanESP <- clean_ESP
+
+save(DF_2012_9_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_9_23.RData")
+save(DF_2012_9_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_9_23.RData")
+
+rm(S1_2012_9_23, S2_2012_9_23, S3_2012_9_23, DF_2012_9_23, DF_2012_9_23_cleanREG, DF_2012_9_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("September2012, ...done")
+print(Sys.time())
+
+#August
+
+print("August2012, cleaning...")
+print(Sys.time())
+
+S1_2012_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/8/S1_2012_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_8_23 <- select(S1_2012_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/8/S2_2012_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_8_23 <- select(S2_2012_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_8_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/8/S3_2012_8_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_8_23 <- select(S3_2012_8_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_8_23 <- rbind(S1_2012_8_23, S2_2012_8_23, S3_2012_8_23)
+
+save(DF_2012_8_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_8_23.RData")
+
+vector <- as.vector(DF_2012_8_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_8_23_cleanREG <- clean_REG
+DF_2012_8_23_cleanESP <- clean_ESP
+
+save(DF_2012_8_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_8_23.RData")
+save(DF_2012_8_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_8_23.RData")
+
+rm(S1_2012_8_23, S2_2012_8_23, S3_2012_8_23, DF_2012_8_23, DF_2012_8_23_cleanREG, DF_2012_8_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("August2012, ...done")
+print(Sys.time())
+
+#July
+
+print("July2012, cleaning...")
+print(Sys.time())
+
+S1_2012_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/7/S1_2012_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_7_23 <- select(S1_2012_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/7/S2_2012_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_7_23 <- select(S2_2012_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_7_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/7/S3_2012_7_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_7_23 <- select(S3_2012_7_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_7_23 <- rbind(S1_2012_7_23, S2_2012_7_23, S3_2012_7_23)
+
+save(DF_2012_7_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_7_23.RData")
+
+vector <- as.vector(DF_2012_7_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_7_23_cleanREG <- clean_REG
+DF_2012_7_23_cleanESP <- clean_ESP
+
+save(DF_2012_7_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_7_23.RData")
+save(DF_2012_7_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_7_23.RData")
+
+rm(S1_2012_7_23, S2_2012_7_23, S3_2012_7_23, DF_2012_7_23, DF_2012_7_23_cleanREG, DF_2012_7_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("July2012, ...done")
+print(Sys.time())
+
+#June
+
+print("June2012, cleaning...")
+print(Sys.time())
+
+S1_2012_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/6/S1_2012_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_6_23 <- select(S1_2012_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/6/S2_2012_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_6_23 <- select(S2_2012_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_6_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/6/S3_2012_6_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_6_23 <- select(S3_2012_6_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_6_23 <- rbind(S1_2012_6_23, S2_2012_6_23, S3_2012_6_23)
+
+save(DF_2012_6_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_6_23.RData")
+
+vector <- as.vector(DF_2012_6_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_6_23_cleanREG <- clean_REG
+DF_2012_6_23_cleanESP <- clean_ESP
+
+save(DF_2012_6_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_6_23.RData")
+save(DF_2012_6_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_6_23.RData")
+
+rm(S1_2012_6_23, S2_2012_6_23, S3_2012_6_23, DF_2012_6_23, DF_2012_6_23_cleanREG, DF_2012_6_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("June2012, ...done")
+print(Sys.time())
+
+#May
+
+print("May2012, cleaning...")
+print(Sys.time())
+
+S1_2012_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/5/S1_2012_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_5_23 <- select(S1_2012_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/5/S2_2012_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_5_23 <- select(S2_2012_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_5_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/5/S3_2012_5_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_5_23 <- select(S3_2012_5_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_5_23 <- rbind(S1_2012_5_23, S2_2012_5_23, S3_2012_5_23)
+
+save(DF_2012_5_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_5_23.RData")
+
+vector <- as.vector(DF_2012_5_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_5_23_cleanREG <- clean_REG
+DF_2012_5_23_cleanESP <- clean_ESP
+
+save(DF_2012_5_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_5_23.RData")
+save(DF_2012_5_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_5_23.RData")
+
+rm(S1_2012_5_23, S2_2012_5_23, S3_2012_5_23, DF_2012_5_23, DF_2012_5_23_cleanREG, DF_2012_5_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("May2012, ...done")
+print(Sys.time())
+
+#April
+
+print("April2012, cleaning...")
+print(Sys.time())
+
+S1_2012_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/4/S1_2012_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_4_23 <- select(S1_2012_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/4/S2_2012_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_4_23 <- select(S2_2012_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_4_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/4/S3_2012_4_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_4_23 <- select(S3_2012_4_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_4_23 <- rbind(S1_2012_4_23, S2_2012_4_23, S3_2012_4_23)
+
+save(DF_2012_4_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_4_23.RData")
+
+vector <- as.vector(DF_2012_4_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_4_23_cleanREG <- clean_REG
+DF_2012_4_23_cleanESP <- clean_ESP
+
+save(DF_2012_4_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_4_23.RData")
+save(DF_2012_4_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_4_23.RData")
+
+rm(S1_2012_4_23, S2_2012_4_23, S3_2012_4_23, DF_2012_4_23, DF_2012_4_23_cleanREG, DF_2012_4_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("April2012, ...done")
+print(Sys.time())
+
+#March
+
+print("March2012, cleaning...")
+print(Sys.time())
+
+S1_2012_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/3/S1_2012_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_3_23 <- select(S1_2012_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/3/S2_2012_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_3_23 <- select(S2_2012_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_3_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/3/S3_2012_3_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_3_23 <- select(S3_2012_3_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_3_23 <- rbind(S1_2012_3_23, S2_2012_3_23, S3_2012_3_23)
+
+save(DF_2012_3_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_3_23.RData")
+
+vector <- as.vector(DF_2012_3_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_3_23_cleanREG <- clean_REG
+DF_2012_3_23_cleanESP <- clean_ESP
+
+save(DF_2012_3_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_3_23.RData")
+save(DF_2012_3_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_3_23.RData")
+
+rm(S1_2012_3_23, S2_2012_3_23, S3_2012_3_23, DF_2012_3_23, DF_2012_3_23_cleanREG, DF_2012_3_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("March2012, ...done")
+print(Sys.time())
+
+#February
+
+print("February2012, cleaning...")
+print(Sys.time())
+
+S1_2012_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/2/S1_2012_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_2_23 <- select(S1_2012_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/2/S2_2012_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_2_23 <- select(S2_2012_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_2_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/2/S3_2012_2_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_2_23 <- select(S3_2012_2_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_2_23 <- rbind(S1_2012_2_23, S2_2012_2_23, S3_2012_2_23)
+
+save(DF_2012_2_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_2_23.RData")
+
+vector <- as.vector(DF_2012_2_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_2_23_cleanREG <- clean_REG
+DF_2012_2_23_cleanESP <- clean_ESP
+
+save(DF_2012_2_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_2_23.RData")
+save(DF_2012_2_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_2_23.RData")
+
+rm(S1_2012_2_23, S2_2012_2_23, S3_2012_2_23, DF_2012_2_23, DF_2012_2_23_cleanREG, DF_2012_2_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("February2012, ...done")
+print(Sys.time())
+
+#January
+
+print("January2012, cleaning...")
+print(Sys.time())
+
+S1_2012_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/1/S1_2012_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S1_2012_1_23 <- select(S1_2012_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S2_2012_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/1/S2_2012_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S2_2012_1_23 <- select(S2_2012_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+S3_2012_1_23 <- suppressMessages(suppressWarnings(read_delim("Datasets/Tweets/Series_23/2012/1/S3_2012_1_23.csv", 
+                                                             ";", escape_double = FALSE, trim_ws = TRUE)))
+
+S3_2012_1_23 <- select(S3_2012_1_23, c("username", "date", "retweets", "favorites", "text"))
+
+DF_2012_1_23 <- rbind(S1_2012_1_23, S2_2012_1_23, S3_2012_1_23)
+
+save(DF_2012_1_23, file = "Objects/Tweets/Series_23/Dirty/DF_2012_1_23.RData")
+
+vector <- as.vector(DF_2012_1_23$text)
+
+fun_txtcleaner(vector)
+
+DF_2012_1_23_cleanREG <- clean_REG
+DF_2012_1_23_cleanESP <- clean_ESP
+
+save(DF_2012_1_23_cleanREG, file = "Objects/Tweets/Series_23/Clean/REG/DF_2012_1_23.RData")
+save(DF_2012_1_23_cleanESP, file = "Objects/Tweets/Series_23/Clean/ESP/DF_2012_1_23.RData")
+
+rm(S1_2012_1_23, S2_2012_1_23, S3_2012_1_23, DF_2012_1_23, DF_2012_1_23_cleanREG, DF_2012_1_23_cleanESP, clean_ESP, clean_REG, vector)
+
+print("January2012, ...done")
+print(Sys.time())
