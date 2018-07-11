@@ -1,9 +1,5 @@
+#Libraries
 
-#merging and labeling the lexicon
-
-#connect all libraries
-library(twitteR)
-library(ROAuth)
 library(plyr)
 library(dplyr)
 library(stringr)
@@ -46,6 +42,8 @@ colnames(valence) <- c("Word", "Rating")
 
 save(valence, file = "Objects/Models/valence.RData")
 
+#Accuracy testing
+
 Dataset <- TASScorpus_clean
 Dataset$content <- as.factor(Dataset$content)
 scores <- score.sentiment(Dataset$content, valence, .progress='text') #start score function
@@ -56,7 +54,7 @@ score2$score[scores$score < "5.5555"] <- "Neg"
 score2$score[scores$score == "5.5555"] <- "Neu"
 score2$score[scores$score > "5.5555"] <- "Pos"
 
-#Testing the accuracy of this method
+#Confusion Matrix
 
 resultsLexicon <- table(observed = TASScorpus_clean$sentiment, predicted = score2$score)
 
@@ -71,21 +69,6 @@ print(error) #22,85%
 
 save(resultsLexicon, file = "resultsLexicon.RData")
 save(accuracyLexicon, file = "accuracyLexiconLexicon.RData")
-
-#modify evaluation
-
-stat <- scores
-stat$created <- stack$created
-stat$created <- as.Date(stat$created)
-stat <- na.omit(stat) #delete unvalued tweets
-write.csv(stat, file=paste(searchterm, '_opin_val.csv'), row.names=TRUE)
-
-#chart
-
-ggplot(stat, aes(created, score)) + geom_point(size=1) +
-  stat_summary(fun.data = 'mean_cl_normal', mult = 1, geom = 'smooth') +
-  ggtitle(searchterm)
-ggsave(file=paste(searchterm, '_plot_val.jpeg'))
 
 
 
