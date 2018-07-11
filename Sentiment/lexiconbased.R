@@ -66,8 +66,8 @@ accuracyLexicon <- (((results[1,1]+results[2,2])/43966)*100)
 
 error <- (100-accuracy)
 
-print(accuracyLexicon) #77,04%
-print(error) #22,96%
+print(accuracyLexicon) #77,15%
+print(error) #22,85%
 
 save(resultsLexicon, file = "resultsLexicon.RData")
 save(accuracyLexicon, file = "accuracyLexiconLexicon.RData")
