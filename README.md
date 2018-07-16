@@ -1,12 +1,12 @@
 ### SpanishSocialMediaIndex
 
-This is the repository of my final degree project
+This is the repository of my final degree project. It contains the following information:
 
  1- Scripts to get spanish twitter users
  
  2- Scripts to merge all the tweets datasets
  
- 3- Scripts of the algorithm training and validation
+ 3- Scripts of the algorithm training and validation results
  
  4- Scripts to perform sentiment classification
  
