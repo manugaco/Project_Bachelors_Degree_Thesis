@@ -8,7 +8,7 @@ This is the repository of my final degree project. It contains the following inf
  
  3- Scripts of the algorithm training and validation results
  
- 4- Scripts to perform sentiment classification
+ 4- Scripts to perform the sentiment classification
  
  5- Scripts to build the sentiment index
  
