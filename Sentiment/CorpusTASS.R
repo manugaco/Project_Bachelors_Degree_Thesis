@@ -10,24 +10,23 @@ cols <- c("tweetid", "user", "content", "date", "lang", "sentiments")
 
 #2017 Inter
 
-corpusa <- xmlParse("http://www.sepln.org/workshops/tass/tass_data/dataset/intertass-train-tagged.xml")
+corpusa
 rootNodea <- xmlRoot(corpusa)
 dataa <- xmlSApply(rootNodea,function(x) xmlSApply(x, xmlValue))
 corpusa <- data.frame(t(dataa),row.names=NULL)
 
-corpusb <- xmlParse("http://www.sepln.org/workshops/tass/tass_data/dataset/intertass-development-tagged.xml")
+corpusb
 rootNodeb <- xmlRoot(corpusb)
 datab <- xmlSApply(rootNodeb,function(x) xmlSApply(x, xmlValue))
 corpusb <- data.frame(t(datab),row.names=NULL)
 
-corpusc <- xmlParse("http://www.sepln.org/workshops/tass/tass_data/dataset/intertass-test.xml")
+corpusc
 rootNodec <- xmlRoot(corpusc)
 datac <- xmlSApply(rootNodec,function(x) xmlSApply(x, xmlValue))
 corpusc <- data.frame(t(datac),row.names=NULL)
 corpusc <- subset(corpusc, select = -sentiment)
 
-corpusc_2 <- read.table("http://www.sepln.org/workshops/tass/tass_data/dataset/intertass-sentiment.qrel",
-                        sep="\t", header=FALSE)
+corpusc_2
 
 colnames(corpusc_2) <- c("id", "sentiment")
 
@@ -44,7 +43,7 @@ rm(corpusa, rootNodea, dataa, corpusb, rootNodeb, datab, corpusc, rootNodec, dat
 
 #2012 general
 
-corpusa <- xmlParse("http://www.sepln.org/workshops/tass/tass_data/dataset/general-train-tagged-3l.xml")
+corpusa
 rootNodea <- xmlRoot(corpusa)
 dataa <- xmlSApply(rootNodea,function(x) xmlSApply(x, xmlValue))
 corpusa <- data.frame(t(dataa),row.names=NULL)
@@ -54,7 +53,7 @@ corpusa <- corpusa %>%
 
 colnames(corpusa) <- c("tweetid", "user", "content", "date", "lang", "sentiment")
 
-corpusb <- xmlParse("http://www.sepln.org/workshops/tass/tass_data/dataset/general-test-tagged-3l.xml")
+corpusb
 rootNodeb <- xmlRoot(corpusb)
 datab <- xmlSApply(rootNodeb,function(x) xmlSApply(x, xmlValue))
 corpusb <- data.frame(t(datab),row.names=NULL)
