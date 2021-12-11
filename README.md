@@ -1,4 +1,4 @@
-### SpanishSocialMediaIndex
+### Using social media to measure the consumer confidence: The Twitter case in Spain.
 
 This is the repository of my final degree project. It contains the following information:
 
